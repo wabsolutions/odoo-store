@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_payment_method_view_form_inherit" model="ir.ui.view">
+        <field name="name">pos.payment.method.form.inherit</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/*" position="before">
+                <header>
+                    <button name="action_generate_device_code" context="{'generate_code':True}"
+                            attrs="{'invisible':[('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"
+                            string="Generate Device Code" type="object" class="oe_highlight"/>
+                </header>
+            </xpath>
+            <xpath expr="//sheet/widget" position="before">
+                <div class="alert alert-danger" role="alert" style="text-align:center"
+                     attrs="{'invisible': [('message', '=', False)]}">
+                    <field name="message" decoration-bf="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='use_payment_terminal']" position="after">
+                <field name="manual_card_entry"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
+                <field name="application_id"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')], 'required': [('use_payment_terminal', '=', 'ws_pos_square_payment_terminal')]}"/>
+                <field name="token_key"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
+                <field name="web_hook_url"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
+                <field name="device_code"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}" readonly="1"/>
+                <field name="location_id"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
+                <field name="device_name"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
+                <field name="account_type"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')], 'required': [('use_payment_terminal', '=', 'ws_pos_square_payment_terminal')]}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
