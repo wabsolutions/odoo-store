@@ -22,7 +22,8 @@
             'ws_pos_payment_terminal/static/**/*',
         ],
         'web.assets_qweb': [
-            'ws_pos_payment_terminal/static/src/xml/PaymentMethodButton.xml'
+            'ws_pos_payment_terminal/static/src/xml/PaymentMethodButton.xml',
+            'ws_pos_payment_terminal/static/src/xml/PaymentScreenPaymentLines.xml',
         ],
     },
 
