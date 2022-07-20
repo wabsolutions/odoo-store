@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PaymentMethodButton" t-inherit="point_of_sale.PaymentMethodButton" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('payment-name')]" position="replace">
+            <div class="payment-name">
+                <t t-esc="props.paymentMethod.name" t-if="props.paymentMethod.pos_name == false"/>
+                <t t-esc="props.paymentMethod.pos_name" t-if="props.paymentMethod.pos_name != false"/>
+            </div>
+        </xpath>
+    </t>
+</templates>
