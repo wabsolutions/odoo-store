@@ -368,51 +368,60 @@ class PosPaymentMethod(models.Model):
                     }
             return data
 
-    def square_refund_payment(self,payment_id,amount,currency):
+    def square_refund_payment(self, orderid, amount, currency):
         try:
 
-            if self.account_type == 'sandbox':
-                checkout_url = 'https://connect.squareupsandbox.com/v2/refunds'
-            else:
-                checkout_url = 'https://connect.squareup.com/v2/refunds'
+            pos_payment = None
+            pos_order = self.env['pos.order.line'].search([('id', '=', int(orderid))]).order_id
+            if pos_order:
+                for payment in pos_order.payment_ids:
+                    if payment.transaction_id and payment.payment_ref:
+                        pos_payment = payment
+                        break
 
-            header = {
-                'Square-Version': '2022-05-12',
-                'Authorization': 'Bearer ' + str(self.token_key),
-                'Content-Type': 'application/json'
-            }
+            if self.token_key and pos_payment and pos_payment.transaction_id and not pos_payment.refunded_id:
+                if self.account_type == 'sandbox':
+                    checkout_url = 'https://connect.squareupsandbox.com/v2/refunds'
+                else:
+                    checkout_url = 'https://connect.squareup.com/v2/refunds'
 
-            body = {
-                "idempotency_key": ''.join(random.choices(string.ascii_letters + string.digits, k=16)),
-                "amount_money": {
-                    "amount": amount,
-                    "currency": currency,
-                },
+                header = {
+                    'Square-Version': '2022-05-12',
+                    'Authorization': 'Bearer ' + str(self.token_key),
+                    'Content-Type': 'application/json'
+                }
 
-                "payment_id": payment_id,
-                "reason": "cancel from Odoo"
-            }
+                body = {
+                    "idempotency_key": ''.join(random.choices(string.ascii_letters + string.digits, k=16)),
+                    "amount_money": {
+                        "amount": abs(amount),
+                        "currency": currency,
+                    },
 
-            response = requests.post(checkout_url, headers=header, data= json.dumps(body))
+                    "payment_id": pos_payment.payment_ref.split(',')[0],
+                    "reason": "Refund from Odoo"
+                }
 
-            if response and response.status_code == 200:
-                refund = json.loads(response.content).get('refund')
-                if refund and refund.get('status'):
-                    data = {
-                        'error': False,
-                        'refund_id': refund.get('id'),
-                        'message': 'Successfully refund the Payment',
-                    }
+                response = requests.post(checkout_url, headers=header, data=json.dumps(body))
 
-            else:
-                content = json.loads(response.content)
-                if content.get('errors'):
-                    data = {'error': True,
-                            'status': 'Error',
-                            'message': '{} , So the refund transaction could not process.'.format(
-                                content.get('errors')[0].get('code') if content.get('errors') else {} )
-                            }
-                    return data
+                if response and response.status_code == 200:
+                    refund = json.loads(response.content).get('refund')
+                    if refund and refund.get('status'):
+                        data = {
+                            'error': False,
+                            'refund_id': refund.get('id'),
+                            'message': 'Successfully refund the Payment',
+                        }
+
+                else:
+                    content = json.loads(response.content)
+                    if content.get('errors'):
+                        data = {'error': True,
+                                'status': 'Error',
+                                'message': "Refund transaction couldn't be processed. Error code: %s. %s ."
+                                           % (content.get('errors')[0].get('code'), content.get('errors')[0].get('detail'))
+                                }
+                return data
 
         except Exception as ex:
             data = {'error': True,
@@ -420,8 +429,6 @@ class PosPaymentMethod(models.Model):
                     'message': ex,
                     }
             return data
-
-
 
 
 

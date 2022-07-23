@@ -33,7 +33,6 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
           method: "check_device_status",
           args: [line.payment_method.id],
         }).then(function (result) {
-        debugger
           if (result.error) {
 
            
@@ -51,7 +50,6 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
             line.set_payment_status("retry");
           }
           else if(result.status=='EXPIRED'){
-          debugger
            self._show_error(
               _t(result.message)
             );
@@ -81,19 +79,18 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
             return Promise.resolve();
         }
         // refund from square
-        if (order.selected_paymentline.amount < 0 && line.order.selected_orderline.refunded_orderline_id && line.transaction_id) {
-            return this.connection_square().then(function(data) {
-                return self._sd_square_payment_terminal_refund(line.order.selected_orderline,line).then(function(refund_res){
-                if (!refund_res.error){
-                    order.selected_paymentline.refunded_id = refund_res.id
-                    return true
-                }
-                else{
-                  line.set_payment_status("retry");
-                  return false
-                }
+        debugger;
+        if (order.selected_paymentline.amount < 0 && line.order.selected_orderline.refunded_orderline_id) {
+            return self._sd_square_payment_terminal_refund(line.order.selected_orderline,line).then(function(refund_res){
+            if (!refund_res.error){
+                order.selected_paymentline.refunded_id = refund_res.id
+                return true
+            }
+            else{
+              line.set_payment_status("retry");
+              return false
+            }
 
-                });
             });
         }
         else if (order.selected_paymentline.amount < 0) {
@@ -122,7 +119,7 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
          return  rpc.query({
           model: "pos.payment.method",
           method: "square_refund_payment",
-          args: [payment_method_id,payment_id,parseInt(line.amount*(100)) ,currency],
+          args: [payment_method_id,data.refunded_orderline_id,parseInt(line.amount*(100)) ,currency],
         }).then(function (response) {
           return response;
         }).then(function(response) {
@@ -132,7 +129,7 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
                 return response
             }
             else{
-                 self._show_error(_t("Error while return amount  from Square : "+response.data));
+                 self._show_error(_t(response.message));
                  line.set_payment_status("retry");
                  Promise.reject()
                  return response
@@ -227,13 +224,13 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
 
     },
 
-      // private methods
-        _reset_state: function() {
-            this.was_cancelled = false;
-            this.last_diagnosis_service_id = false;
-            this.remaining_polls = 4;
-            clearTimeout(this.polling);
-        },
+     // private methods
+     _reset_state: function() {
+        this.was_cancelled = false;
+        this.last_diagnosis_service_id = false;
+        this.remaining_polls = 4;
+        clearTimeout(this.polling);
+     },
 
     _square_poll_for_response: function (resolve, reject, checkout_id) {
       var line = this.pos.get_order().selected_paymentline;

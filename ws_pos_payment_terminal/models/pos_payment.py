@@ -11,6 +11,6 @@ class PosPaymentMethod(models.Model):
 class PosPayment(models.Model):
     _inherit = "pos.payment"
 
-    payment_ref = fields.Char(string="Receipt Number", copy=False)
+    payment_ref = fields.Char(string="Payments", copy=False)
     refunded_id = fields.Char(string="Refunded ID", copy=False)
 

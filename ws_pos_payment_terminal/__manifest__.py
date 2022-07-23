@@ -14,7 +14,7 @@
     ],
     "data": [
         "views/res_config_settings_views.xml",
-        "views/pos_payment_method_views.xml",
+        "views/pos_payments_views.xml",
     ],
 
     'assets': {
