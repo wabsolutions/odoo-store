@@ -422,23 +422,6 @@ class PosPaymentMethod(models.Model):
             return data
 
 
-class PosPayment(models.Model):
-    _inherit = "pos.payment"
-
-    payment_ref = fields.Char(string="Square Receipt Number", copy=False)
-    refunded_id = fields.Char(string="Square Refunded ID", copy=False)
-
-
-class PosOrder(models.Model):
-    """Inherit to Populate the custom field values from JS"""
-    _inherit = "pos.order"
-
-    def _payment_fields(self, order, ui_paymentline):
-        rec = super(PosOrder, self)._payment_fields( order, ui_paymentline)
-        rec['refunded_id'] = ui_paymentline.get('refunded_id', False)
-        rec['payment_ref'] = ui_paymentline.get('payment_ref', False)
-
-        return rec
 
 
 

@@ -1,4 +1,4 @@
-odoo.define('ws_pos_square_payment_terminal.model_field_load', function (require) {
+odoo.define('ws_pos_payment_terminal.model_field_load', function (require) {
     const models = require('point_of_sale.models');
     const _super_Paymentline = models.Paymentline.prototype;
     models.Paymentline = models.Paymentline.extend({
