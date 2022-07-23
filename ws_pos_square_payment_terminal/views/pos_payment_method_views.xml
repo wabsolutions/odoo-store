@@ -27,8 +27,8 @@
                        attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
                 <field name="web_hook_url"
                        attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
-                <field name="device_code"
-                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}" readonly="1"/>
+                <field name="device_code" options="{'no_create_edit': True, 'no_create': True}"
+                       attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')], 'readonly':[('manual_card_entry', '=', False)] }"/>
                 <field name="location_id"
                        attrs="{'invisible': [('use_payment_terminal', '!=', 'ws_pos_square_payment_terminal')]}"/>
                 <field name="device_name"
