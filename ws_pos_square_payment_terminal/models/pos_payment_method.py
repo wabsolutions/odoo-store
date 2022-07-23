@@ -281,7 +281,7 @@ class PosPaymentMethod(models.Model):
                     }
             return data
 
-    def check_payment_status(self,checkout_id):
+    def check_payment_status(self, checkout_id):
         try:
 
             if self.account_type == 'sandbox':
@@ -306,6 +306,7 @@ class PosPaymentMethod(models.Model):
                         'error': False,
                         'checkout_id': checkout.get('id'),
                         'status': checkout.get('status'),
+                        'payment_ref': ','.join([str(payment) for payment in checkout.get('payment_ids')]),
                     }
                     return data
             else:
@@ -424,16 +425,18 @@ class PosPaymentMethod(models.Model):
 class PosPayment(models.Model):
     _inherit = "pos.payment"
 
-    refunded_id = fields.Char(string="Square Refunded ID", required=False, )
+    payment_ref = fields.Char(string="Square Receipt Number", copy=False)
+    refunded_id = fields.Char(string="Square Refunded ID", copy=False)
 
 
 class PosOrder(models.Model):
-    """Inherit to Populate the refunded_Id value from JS"""
+    """Inherit to Populate the custom field values from JS"""
     _inherit = "pos.order"
 
     def _payment_fields(self, order, ui_paymentline):
         rec = super(PosOrder, self)._payment_fields( order, ui_paymentline)
-        rec['refunded_id'] = ui_paymentline.get('refunded_id',False)
+        rec['refunded_id'] = ui_paymentline.get('refunded_id', False)
+        rec['payment_ref'] = ui_paymentline.get('payment_ref', False)
 
         return rec
 

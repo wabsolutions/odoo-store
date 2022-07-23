@@ -71,47 +71,37 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
     },
 
     _ws_pos_square_payment_terminal_pay: function () {
-      var self = this;
-      var line = this.pos.get_order().selected_paymentline;
-      var order = this.pos.get_order();
-      if (!line) {
-        return Promise.reject();
-      }
-      if (this.was_cancelled) {
-        return Promise.resolve();
-      }
+        var self = this;
+        var line = this.pos.get_order().selected_paymentline;
+        var order = this.pos.get_order();
+        if (!line) {
+            return Promise.reject();
+        }
+        if (this.was_cancelled) {
+            return Promise.resolve();
+        }
         // refund from square
+        if (order.selected_paymentline.amount < 0 && line.order.selected_orderline.refunded_orderline_id && line.transaction_id) {
+            return this.connection_square().then(function(data) {
+                return self._sd_square_payment_terminal_refund(line.order.selected_orderline,line).then(function(refund_res){
+                if (!refund_res.error){
+                    order.selected_paymentline.refunded_id = refund_res.id
+                    return true
+                }
+                else{
+                  line.set_payment_status("retry");
+                  return false
+                }
 
-//         if (order.selected_paymentline.amount < 0 && line.order.selected_orderline.refunded_orderline_id && line.transaction_id) {
-//
-//              return this.connection_square().then(function(data) {
-//
-//                return self._sd_square_payment_terminal_refund(line.order.selected_orderline,line).then(function(refund_res){
-//
-//                if (!refund_res.error)
-//                {
-//                order.selected_paymentline.refunded_id = refund_res.id
-//                return true
-//                }
-//                else
-//                {
-//                  line.set_payment_status("retry");
-//
-//                    return false
-//                }
-//
-//                });
-//            });
-//
-//
-//            }
-
-         if (order.selected_paymentline.amount < 0) {
-                this._show_error(
-                    _t("Cannot process transactions with negative amount.")
-                );
-                return Promise.resolve();
-            }
+                });
+            });
+        }
+        else if (order.selected_paymentline.amount < 0) {
+            this._show_error(
+                _t("Cannot process transactions with negative amount.")
+            );
+            return Promise.resolve();
+        }
 
 
       if (order === this.poll_error_order) {
@@ -119,16 +109,16 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
         return self._ws_pos_square_payment_terminal_handle_response({});
       }
 
-//      line.set_payment_status("waiting");
-//      return this.connection_square().then(function (data) {
+        // line.set_payment_status("waiting");
+        // return this.connection_square().then(function (data) {
         return self._ws_pos_square_payment_terminal_handle_response();
-//      });
+        // });
     },
 
     // square terminal refund
     _sd_square_payment_terminal_refund: function(data,line){
         // refund from Square payment terminal
-           var currency = this.pos.currency.name;
+         var currency = this.pos.currency.name;
          return  rpc.query({
           model: "pos.payment.method",
           method: "square_refund_payment",
@@ -136,22 +126,19 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
         }).then(function (response) {
           return response;
         }).then(function(response) {
-           
             if (response.error==false){
-            console.log('refunded data : ',response.data)
-            Promise.resolve();
-            return response
+                console.log('refunded data : ',response.data)
+                Promise.resolve();
+                return response
             }
-            else
-            {
-            self._show_error(_t("Error while return amount  from Square : "+response.data));
-             line.set_payment_status("retry");
-             Promise.reject()
-             return response
-
+            else{
+                 self._show_error(_t("Error while return amount  from Square : "+response.data));
+                 line.set_payment_status("retry");
+                 Promise.reject()
+                 return response
             }
 
-            });
+        });
 
         },
 
@@ -201,12 +188,8 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
                       if (self.last_diagnosis_service_id == true) {
                         clearTimeout(this.polling);
                       }
-
-
 //                      clearInterval(self.polling);
                       return test;
-
-
 
                 }, 8500);
 
@@ -215,7 +198,6 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
              if (self.last_diagnosis_service_id == true) {
                         clearTimeout(time_out);
                       }
-
              }
                 else {
                   line.set_payment_status("retry");
@@ -270,58 +252,50 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
           //            if there is error in response
           if (data){
              if (data.error) {
-           
-            if (self.remaining_polls != 0) {
-              self.remaining_polls--;
-              return Promise.reject();
-               self._show_error(
-              _t(data.message)
-            );
-            } else {
-              reject();
-              self.poll_error_order = self.pos.get_order();
-              return Promise.reject();
-               self._show_error(
-              _t(data.message))
-            }
-            resolve(false);
-            return Promise.reject();
+                if (self.remaining_polls != 0) {
+                  self.remaining_polls--;
+                  return Promise.reject();
+                   self._show_error(
+                  _t(data.message)
+                );
+                } else {
+                  reject();
+                  self.poll_error_order = self.pos.get_order();
+                  return Promise.reject();
+                   self._show_error(
+                  _t(data.message))
+                }
+                resolve(false);
+                return Promise.reject();
+              }
+              else {
+                is_connected = true;
+                var clientSecret = data;
+                if (data.status=='COMPLETED'){
+                    line.transaction_id = data.checkout_id;
+                    line.payment_ref = data.payment_ref;
+                    line.set_payment_status("done");
+                    resolve(true);
+                    self.last_diagnosis_service_id = true;
+                }
+                if (data.status=='IN_PROGRESS'){
+                    line.transaction_id = payment_id;
+                }
+                if (data.status=='CANCELED'){
+                    self._show_error(
+                      _t('Cancelled: Payment transaction has been cancelled!'))
+                       line.set_payment_status("retry");
+                       resolve(false);
+                }
+                if (data.status=='FAILED'){
+                    self._show_error(
+                      _t('Payment transaction has been Failed,PLease check the status of Payment on square account.',))
+                       self._ws_pos_square_payment_terminal_cancel();
+                       line.set_payment_status("retry");
+                       resolve(false);
+                }
+              }
           }
-          else {
-            is_connected = true;
-            var clientSecret = data;
-            if (data.status=='COMPLETED')
-            {
-            line.transaction_id = data.checkout_id;
-            line.set_payment_status("done");
-            resolve(true);
-            self.last_diagnosis_service_id = true;
-
-            }
-            if (data.status=='IN_PROGRESS')
-            {
-            line.transaction_id = payment_id;
-
-
-            }
-            if (data.status=='CANCELED'){
-            self._show_error(
-              _t('Cancelled: Payment transaction has been cancelled!'))
-               line.set_payment_status("retry");
-               resolve(false);
-
-            }
-            if (data.status=='FAILED')
-            {
-            self._show_error(
-              _t('Payment transaction has been Failed,PLease check the status of Payment on square account.',))
-               self._ws_pos_square_payment_terminal_cancel();
-               line.set_payment_status("retry");
-               resolve(false);
-            }
-            }
-          }
-
 
 
 
@@ -401,39 +375,34 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
             return Promise.reject();
             //              return data;
           } else {
-
             payment_id = data.checkout_id
-
-
             return data;
           }
         });
     },
 
     _check_payment_status: function(checkout_id){
+        return rpc.query({
+              model: "pos.payment.method",
+              method: "check_payment_status",
+              args: [payment_method_id,checkout_id],
+            }).then(function (data) {
+            console.log('***************data******',data)
+              if (data && data.error) {
+                self._show_error(
+                  _t(data.message)
+                );
+                console.log("Sorry! Could not process the Payment. " + data.error);
+                var line = self.pos.get_order().selected_paymentline;
+                line.set_payment_status("retry");
+                return Promise.reject();
+                //              return data;
+              } else if (data) {
 
-    return rpc.query({
-          model: "pos.payment.method",
-          method: "check_payment_status",
-          args: [payment_method_id,checkout_id],
-        }).then(function (data) {
-        console.log('***************data******',data)
-          if (data && data.error) {
-            self._show_error(
-              _t(data.message)
-            );
-            console.log("Sorry! Could not process the Payment. " + data.error);
-            var line = self.pos.get_order().selected_paymentline;
-            line.set_payment_status("retry");
-            return Promise.reject();
-            //              return data;
-          } else if (data) {
 
-
-            return data;
-          }
-        });
-
+                return data;
+              }
+            });
     },
 
     send_payment_cancel: function (order, cid) {
