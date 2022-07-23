@@ -123,8 +123,8 @@ odoo.define("ws_pos_square_payment_terminal.payment", function (require) {
         }).then(function (response) {
           return response;
         }).then(function(response) {
-            if (response.error==false){
-                console.log('refunded data : ',response.data)
+            if (response.error == false){
+                console.log('refunded data : ',response.message)
                 Promise.resolve();
                 return response
             }

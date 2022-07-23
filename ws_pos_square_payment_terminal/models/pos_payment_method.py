@@ -423,6 +423,13 @@ class PosPaymentMethod(models.Model):
                                 }
                 return data
 
+            else:
+                data = {'error': True,
+                        'status': 'Error',
+                        'message': """Couldn't refund payment with Terminal. 
+                                   "Please refund it with other options (Cash or Bank)""",
+                        }
+                return data
         except Exception as ex:
             data = {'error': True,
                     'status': 'Error',
